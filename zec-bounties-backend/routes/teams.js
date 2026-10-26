@@ -1801,6 +1801,13 @@ router.post("/:teamId/members", authenticate, async (req, res) => {
       await syncWalletToMembers(teamId, wallet, userIds);
     }
 
+    // Membership decides who sees the team's private bounties, and those
+    // views are cached per viewer: refresh them, as favoriting a team does.
+    await Promise.all([
+      deleteCacheByPattern("bounties:*"),
+      bumpVersion("bounties"),
+    ]);
+
     await broadcastTeamEvent(
       "team_members_updated",
       {
@@ -1941,6 +1948,13 @@ router.delete("/:teamId/members/:userId", authenticate, async (req, res) => {
     if (wallet) {
       await removeWalletFromMembers(teamId, wallet, [userId]);
     }
+
+    // A removed member must stop seeing the team's private bounties now,
+    // not when their cached views expire.
+    await Promise.all([
+      deleteCacheByPattern("bounties:*"),
+      bumpVersion("bounties"),
+    ]);
 
     await broadcastTeamEvent(
       "team_member_removed",
