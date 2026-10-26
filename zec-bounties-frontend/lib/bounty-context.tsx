@@ -2748,6 +2748,25 @@ export function BountyProvider({ children }: { children: React.ReactNode }) {
             fetchZcashParams();
             break;
 
+          case "team_member_role_updated":
+            // Sent to the team when an OWNER changes a member's role, so the
+            // member's own open sessions gain or lose the admin controls.
+            setTeams((prev) =>
+              prev.map((t) =>
+                t.id !== msg.payload.teamId
+                  ? t
+                  : {
+                      ...t,
+                      members: t.members.map((m) =>
+                        m.userId === msg.payload.member?.userId
+                          ? { ...m, role: msg.payload.member.role }
+                          : m,
+                      ),
+                    },
+              ),
+            );
+            break;
+
           case "team_member_removed":
             setTeams((prev) =>
               prev.map((t) =>
